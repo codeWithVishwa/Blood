@@ -443,7 +443,7 @@ export default function App() {
           className="absolute inset-0"
         >
           <SeamlessVideo 
-            src="/asset/Animation.mp4" 
+            src="/asset/animation.mp4" 
             className="w-full h-full"
           />
           <div className="absolute inset-0 bg-black/20" />
