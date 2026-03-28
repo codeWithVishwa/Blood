@@ -139,10 +139,23 @@ function SeamlessVideo({ src, className }: { src: string, className?: string }) 
   const videoRef2 = useRef<HTMLVideoElement>(null);
   const fadeDuration = 1.5; // seconds
 
+  const safePlay = (video: HTMLVideoElement | null) => {
+    if (!video) return;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay may be blocked by browser policy.
+      });
+    }
+  };
+
   useEffect(() => {
     const v1 = videoRef1.current;
     const v2 = videoRef2.current;
     if (!v1 || !v2) return;
+
+    // Ensure first video starts as soon as it's ready on initial render.
+    safePlay(v1);
 
     const handleTimeUpdate = (e: Event) => {
       const video = e.target as HTMLVideoElement;
@@ -153,12 +166,7 @@ function SeamlessVideo({ src, className }: { src: string, className?: string }) 
       if (remaining <= fadeDuration && activeVideo === (video === v1 ? 0 : 1)) {
         const nextVideo = video === v1 ? v2 : v1;
         nextVideo.currentTime = 0;
-        const playPromise = nextVideo.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Auto-play was prevented
-          });
-        }
+        safePlay(nextVideo);
         setActiveVideo(video === v1 ? 1 : 0);
       }
     };
@@ -181,7 +189,8 @@ function SeamlessVideo({ src, className }: { src: string, className?: string }) 
         playsInline
         autoPlay
         preload="auto"
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${activeVideo === 0 ? 'opacity-90' : 'opacity-0'}`}
+        onLoadedData={() => safePlay(videoRef1.current)}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1500 ${activeVideo === 0 ? 'opacity-90' : 'opacity-0'}`}
       />
       <video
         ref={videoRef2}
@@ -189,7 +198,10 @@ function SeamlessVideo({ src, className }: { src: string, className?: string }) 
         muted
         playsInline
         preload="auto"
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${activeVideo === 1 ? 'opacity-90' : 'opacity-0'}`}
+        onLoadedData={() => {
+          if (activeVideo === 1) safePlay(videoRef2.current);
+        }}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1500 ${activeVideo === 1 ? 'opacity-90' : 'opacity-0'}`}
       />
     </div>
   );
@@ -235,7 +247,7 @@ function Car360Modal({ car, onClose }: { car: any, onClose: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/98 backdrop-blur-2xl p-4 md:p-10"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/98 backdrop-blur-2xl p-4 md:p-10"
     >
       <button 
         onClick={onClose}
@@ -284,7 +296,7 @@ function Car360Modal({ car, onClose }: { car: any, onClose: () => void }) {
           <div>
             <div className="flex items-center gap-3 mb-6">
               <span className="text-brand-neon text-[9px] font-bold uppercase tracking-[0.5em]">Precision Engineering</span>
-              <div className="flex-1 h-[1px] bg-brand-neon/20" />
+              <div className="flex-1 h-px bg-brand-neon/20" />
             </div>
             <h2 className="text-5xl md:text-7xl font-display font-bold tracking-tighter mb-6 leading-none">{car.name}</h2>
             <p className="text-gray-400 font-light leading-relaxed text-lg italic font-serif">
@@ -390,7 +402,7 @@ export default function App() {
                 className="text-[9px] font-bold hover:text-brand-neon transition-colors uppercase tracking-[0.4em] relative group"
               >
                 {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-brand-neon transition-all duration-500 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-brand-neon transition-all duration-500 group-hover:w-full" />
               </motion.a>
             ))}
           </div>
@@ -400,7 +412,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             className="hidden md:flex items-center gap-8"
           >
-            <button className="btn-premium group !py-3 !px-6">
+            <button className="btn-premium group py-3! px-6!">
               <span className="relative z-10 flex items-center gap-3">
                 CONTACT US <ArrowUpRight className="w-3 h-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </span>
@@ -447,7 +459,7 @@ export default function App() {
             className="w-full h-full"
           />
           <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505]" />
+          <div className="absolute inset-0 bg-linear-to-b from-[#050505] via-transparent to-[#050505]" />
           <div className="absolute inset-0 cinematic-vignette" />
         </motion.div>
 
@@ -461,7 +473,7 @@ export default function App() {
               className="flex flex-col items-start text-left"
             >
               <div className="flex items-center gap-4 mb-8 opacity-40">
-                <div className="w-12 h-[1px] bg-white/30" />
+                <div className="w-12 h-px bg-white/30" />
                 <span className="text-blue-500 text-[9px] font-light uppercase tracking-[0.8em]">Est. 2005</span>
               </div>
               
@@ -480,7 +492,7 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.5, duration: 2 }}
-                  className="btn-premium group !px-16 !py-8 text-[9px] tracking-[0.6em] border-white/5"
+                  className="btn-premium group px-16! py-8! text-[9px] tracking-[0.6em] border-white/5"
                 >
                   <span className="relative z-10 flex items-center gap-6">
                     EXPLORE SHOWROOM 
@@ -500,7 +512,7 @@ export default function App() {
             transition={{ delay: 2, duration: 2 }}
             className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6"
           >
-            <div className="w-[1px] h-12 bg-gradient-to-b from-brand-neon/50 to-transparent relative overflow-hidden">
+            <div className="w-px h-12 bg-linear-to-b from-brand-neon/50 to-transparent relative overflow-hidden">
               <motion.div 
                 animate={{ y: ["-100%", "100%"] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -538,7 +550,7 @@ export default function App() {
               viewport={{ once: true }}
             >
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-[1px] bg-brand-gold" />
+                <div className="w-12 h-px bg-brand-gold" />
                 <span className="text-brand-gold text-[10px] font-bold uppercase tracking-[0.5em]">Inventory</span>
               </div>
               <h2 className="text-5xl md:text-8xl font-display font-bold tracking-tighter leading-none mb-12">TODAYS <br />SPECIALS</h2>
@@ -585,14 +597,14 @@ export default function App() {
                 >
                   <div className="folded-corner-accent" />
                   
-                  <div className="relative aspect-[16/10] overflow-hidden mb-10 bg-[#050505]">
+                  <div className="relative aspect-16/10 overflow-hidden mb-10 bg-[#050505]">
                     <img 
                       src={car.image} 
                       alt={car.name} 
                       className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-110 relative z-10 grayscale group-hover:grayscale-0"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20" />
                     
                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0 z-30">
                       <button 
@@ -605,7 +617,7 @@ export default function App() {
                   </div>
                   
                   <div className="relative z-10">
-                    <div className="w-12 h-[2px] bg-brand-gold mb-6" />
+                    <div className="w-12 h-0.5 bg-brand-gold mb-6" />
                     <h3 className="text-xl font-display font-bold mb-4 tracking-widest uppercase">{car.name}</h3>
                     <p className="text-gray-500 text-[10px] font-light tracking-[0.2em] uppercase mb-8 leading-relaxed">
                       {car.brand} • {car.specs.hp} HP • {car.specs.zero} 0-60
@@ -639,7 +651,7 @@ export default function App() {
               className="max-w-2xl"
             >
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-[1px] bg-brand-gold" />
+                <div className="w-12 h-px bg-brand-gold" />
                 <span className="text-brand-gold text-[10px] font-bold uppercase tracking-[0.5em]">Maintenance</span>
               </div>
               <h2 className="text-5xl md:text-8xl font-display font-bold tracking-tighter leading-none">ELITE <br />SERVICES</h2>
@@ -673,7 +685,7 @@ export default function App() {
                 className="bg-[#050505] group relative overflow-hidden folded-corner"
               >
                 <div className="folded-corner-accent" />
-                <div className="aspect-[16/9] overflow-hidden">
+                <div className="aspect-video overflow-hidden">
                   <img 
                     src={service.image} 
                     alt={service.title} 
@@ -682,7 +694,7 @@ export default function App() {
                   />
                 </div>
                 <div className="p-12">
-                  <div className="w-12 h-[2px] bg-brand-gold mb-6" />
+                  <div className="w-12 h-0.5 bg-brand-gold mb-6" />
                   <h3 className="text-xl font-display font-bold mb-6 tracking-widest uppercase group-hover:text-brand-gold transition-colors">{service.title}</h3>
                   <p className="text-gray-500 text-[11px] font-light leading-relaxed mb-10 tracking-widest uppercase opacity-60">
                     {service.desc}
@@ -757,7 +769,7 @@ export default function App() {
             className="w-full h-full object-cover grayscale opacity-40"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-r from-black via-black/40 to-transparent" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6">
@@ -769,14 +781,14 @@ export default function App() {
             className="max-w-2xl"
           >
             <div className="flex items-center gap-4 mb-12">
-              <div className="w-12 h-[1px] bg-brand-gold" />
+              <div className="w-12 h-px bg-brand-gold" />
               <span className="text-brand-gold text-xs font-bold uppercase tracking-[0.5em]">The Philosophy</span>
             </div>
             <h2 className="text-6xl md:text-9xl font-display font-bold tracking-tighter mb-12 leading-none">BEYOND <br />DRIVING</h2>
             <p className="text-lg text-gray-400 font-light leading-relaxed mb-16 max-w-lg uppercase tracking-[0.2em]">
               We have propositions for everybody. Our curated collection represents the absolute zenith of automotive performance and luxury.
             </p>
-            <button className="btn-premium !px-16 !py-8">
+            <button className="btn-premium px-16! py-8!">
               <span className="relative z-10">READ MORE</span>
             </button>
           </motion.div>
@@ -966,7 +978,7 @@ export default function App() {
             ]).map((testimonial, i) => (
               <div 
                 key={i}
-                className="bg-[#050505] p-10 md:p-12 w-[300px] md:w-[400px] flex-shrink-0 relative group folded-corner border-r border-white/5"
+                className="bg-[#050505] p-10 md:p-12 w-75 md:w-100 shrink-0 relative group folded-corner border-r border-white/5"
               >
                 <div className="folded-corner-accent" />
                 <Quote className="w-8 h-8 text-brand-gold/20 mb-8 group-hover:text-brand-gold/40 transition-colors" />
@@ -974,7 +986,7 @@ export default function App() {
                   "{testimonial.text}"
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="w-8 h-[1px] bg-brand-gold" />
+                  <div className="w-8 h-px bg-brand-gold" />
                   <div>
                     <h4 className="text-brand-gold font-bold tracking-widest uppercase text-[11px]">{testimonial.author}</h4>
                   </div>
@@ -1022,12 +1034,12 @@ export default function App() {
             className="bg-[#050505] p-16 md:p-40 relative overflow-hidden flex flex-col items-center text-center folded-corner"
           >
             <div className="folded-corner-accent" />
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-gold/5 blur-[150px] -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-200 h-200 bg-brand-gold/5 blur-[150px] -translate-y-1/2 translate-x-1/2" />
             
             <div className="flex items-center gap-4 mb-12">
-              <div className="w-12 h-[1px] bg-brand-gold" />
+              <div className="w-12 h-px bg-brand-gold" />
               <span className="text-brand-gold text-xs font-bold uppercase tracking-[0.5em]">Join the Elite</span>
-              <div className="w-12 h-[1px] bg-brand-gold" />
+              <div className="w-12 h-px bg-brand-gold" />
             </div>
             
             <h2 className="text-6xl md:text-9xl font-display font-bold tracking-tighter mb-16 relative z-10 leading-none">
@@ -1038,10 +1050,10 @@ export default function App() {
               Schedule a private consultation with our specialists today.
             </p>
             <div className="flex flex-col sm:flex-row gap-8 relative z-10">
-              <button className="btn-premium !px-16 !py-8">
+              <button className="btn-premium px-16! py-8!">
                 <span className="relative z-10">BOOK CONSULTATION</span>
               </button>
-              <button className="btn-premium !px-16 !py-8 !bg-white !text-black border-white">
+              <button className="btn-premium px-16! py-8! bg-white! text-black! border-white">
                 <span className="relative z-10">VIEW INVENTORY</span>
               </button>
             </div>
@@ -1115,7 +1127,7 @@ export default function App() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.5, y: 20 }}
             onClick={scrollToTop}
-            className="fixed bottom-10 right-10 w-14 h-14 glass rounded-full flex items-center justify-center z-[90] hover:bg-brand-neon hover:text-black transition-all shadow-2xl group"
+            className="fixed bottom-10 right-10 w-14 h-14 glass rounded-full flex items-center justify-center z-90 hover:bg-brand-neon hover:text-black transition-all shadow-2xl group"
           >
             <ArrowUpRight className="w-6 h-6 -rotate-45 group-hover:scale-110 transition-transform" />
           </motion.button>
